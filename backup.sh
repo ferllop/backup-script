@@ -1,7 +1,8 @@
 #!/bin/bash
 web=$1
 database=$2
-dirnames_to_exclude=$3
+remote_backups_path=$3
+dirnames_to_exclude=$4
 
 #prepare exclude string for files backup
 arr=($(echo "$dirnames_to_exclude" | tr ',' '\n'))
@@ -19,6 +20,7 @@ db_backup_filename=${web}_db_backup
 mysqldump --user=backup_user --lock-tables --databases ${database} -h localhost > ${backups_path}/${db_backup_filename}.sql
 if [ $? -eq 0 ] 
 then
+    some_cp_error="false"
     gzip ${backups_path}/${db_backup_filename}.sql
     #DAILY
     cp ${backups_path}/${db_backup_filename}.sql.gz ${backups_path}/daily/${db_backup_filename}_daily_$(date +%A).sql.gz
@@ -27,6 +29,7 @@ then
             db_message="Daily_DB_OK"
         else
             db_message="Daily_DB_FAILED"
+            some_cp_error="true"
         fi
 
     #WEEKLY 5 backups
@@ -39,6 +42,7 @@ then
             db_message="${db_message}, Weekly_DB_OK"
         else
             db_message="${db_message}, Weekly_DB_FAILED"
+            some_cp_error="true"
         fi
     fi
 
@@ -52,6 +56,7 @@ then
           db_message="${db_message}, Monthly_DB_OK"
         else
             db_message="${db_message}, Monthly_DB_FAILED"
+            some_cp_error="true"
         fi
     fi
 
@@ -65,6 +70,7 @@ then
           db_message="${db_message}, Yearly_DB_OK"
         else
             db_message="${db_message}, Yearly_DB_FAILED"
+            some_cp_error="true"
         fi
     fi
 
@@ -76,6 +82,7 @@ else
         rm ${backups_path}/$db_backup_filename.sql
     fi
     db_message="DB_dump_FAILED"
+    some_cp_error="true"
 fi  
 
 
@@ -90,6 +97,7 @@ then
             fs_message="Daily_FS_OK"
         else
             fs_message="Daily_FS_FAILED"
+            some_cp_error="true"
         fi
 
     #WEEKLY 5 backups
@@ -101,7 +109,8 @@ then
             find ${backups_path}/weekly/*_weekly.tar.gz -mtime +35 -exec rm {} \;
             fs_message="${fs_message}, Weekly_FS_OK"
         else
-          fs_message="${fs_message}, Weekly_FS_FAILED"
+            fs_message="${fs_message}, Weekly_FS_FAILED"
+            some_cp_error="true"
         fi
     fi
  
@@ -112,9 +121,10 @@ then
         if [ $? -eq 0 ] 
         then
             find ${backups_path}/monthly/*_monthly_*.tar.gz -mtime +178 -exec rm {} \;
-          fs_message="${fs_message}, Monthly_FS_OK"
+            fs_message="${fs_message}, Monthly_FS_OK"
         else
             fs_message="${fs_message}, Monthly_FS_FAILED"
+            some_cp_error="true"
         fi
     fi
 
@@ -125,9 +135,10 @@ then
         if [ $? -eq 0 ] 
         then
             find ${backups_path}/yearly/*_yearly_*.tar.gz -mtime +1825 -exec rm {} \;
-          fs_message="${fs_message}, Yearly_FS_OK"
+            fs_message="${fs_message}, Yearly_FS_OK"
         else
             fs_message="${fs_message}, Yearly_FS_FAILED"
+            some_cp_error="true"
         fi
     fi
 
@@ -141,9 +152,21 @@ else
         rm ${backups_path}/${fs_backup_filename}.tar.gz
     fi
     files_message="FS_TAR_FAILED"
+    some_cp_error="true"
 fi
 
+#REMOTE SYNC
+if [ "$some_cp_error" = "false" ]
+then
+    rclone sync ${backups_path} ${remote_backups_path} -P
+    if [ $? -eq 0 ]
+    then
+        remote_message="Remote_SYNC_OK"
+    else
+        remote_message="Remote_SYNC_FAILED"
+    fi
+fi
 
 source /home/backup_user/.telegram_keys   
 URL=https://api.telegram.org/bot$TOKEN/sendMessage
-curl -s -X POST $URL -d chat_id=$CHANNEL -d text="${web} backup: ${db_message} and ${fs_message}" >/dev/null 2>&1
+curl -s -X POST $URL -d chat_id=$CHANNEL -d text="${web} backup: ${db_message} and ${fs_message}. ${remote_message}" >/dev/null 2>&1
