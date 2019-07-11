@@ -1,0 +1,149 @@
+#!/bin/bash
+web=$1
+database=$2
+dirnames_to_exclude=$3
+
+#prepare exclude string for files backup
+arr=($(echo "$dirnames_to_exclude" | tr ',' '\n'))
+exclude=""
+for i in ${arr[@]}
+do
+    exclude="${exclude} --exclude=${i} "
+done
+exclude="$(echo -e "${exclude}" | sed -e 's/[[:space:]]*$//')"
+
+fulldate=$(date +%Y%m%dT%H.%M.%S)   
+
+backups_path=/home/backup_user/backups
+db_backup_filename=${web}_db_backup
+mysqldump --user=backup_user --lock-tables --databases ${database} -h localhost > ${backups_path}/${db_backup_filename}.sql
+if [ $? -eq 0 ] 
+then
+    gzip ${backups_path}/${db_backup_filename}.sql
+    #DAILY
+    cp ${backups_path}/${db_backup_filename}.sql.gz ${backups_path}/daily/${db_backup_filename}_daily_$(date +%A).sql.gz
+        if [ $? -eq 0 ] 
+        then
+            db_message="Daily_DB_OK"
+        else
+            db_message="Daily_DB_FAILED"
+        fi
+
+    #WEEKLY 5 backups
+    if [ "$(date +%A)" == "Monday" ]
+    then
+        cp ${backups_path}/${db_backup_filename}.sql.gz ${backups_path}/weekly/${db_backup_filename}_${fulldate}_weekly.sql.gz
+        if [ $? -eq 0 ] 
+        then
+            find ${backups_path}/weekly/*_weekly.sql.gz -mtime +35 -exec rm {} \;
+            db_message="${db_message}, Weekly_DB_OK"
+        else
+            db_message="${db_message}, Weekly_DB_FAILED"
+        fi
+    fi
+
+    #MONTHLY 6 backups
+    if [ "$(date +%d)" == "01" ]
+    then
+        cp ${backups_path}/${db_backup_filename}.sql.gz ${backups_path}/monthly/${db_backup_filename}_monthly_$(date +%M).sql.gz
+        if [ $? -eq 0 ] 
+        then
+            find ${backups_path}/monthly/*_monthly_*.sql.gz -mtime +178 -exec rm {} \;
+          db_message="${db_message}, Monthly_DB_OK"
+        else
+            db_message="${db_message}, Monthly_DB_FAILED"
+        fi
+    fi
+
+    #YEARLY 5 backups
+    if [ "$(date +%j)" == "001" ]
+    then
+        cp ${backups_path}/${db_backup_filename}.sql.gz ${backups_path}/yearly/${db_backup_filename}_yearly_$(date +%Y).sql.gz
+        if [ $? -eq 0 ] 
+        then
+            find ${backups_path}/yearly/*_yearly_*.sql.gz -mtime +178 -exec rm {} \;
+          db_message="${db_message}, Yearly_DB_OK"
+        else
+            db_message="${db_message}, Yearly_DB_FAILED"
+        fi
+    fi
+
+    rm ${backups_path}/$db_backup_filename.sql.gz
+    
+else 
+    if [ -e ${backups_path}/$db_backup_filename.sql ]
+    then
+        rm ${backups_path}/$db_backup_filename.sql
+    fi
+    db_message="DB_dump_FAILED"
+fi  
+
+
+fs_backup_filename=${web}_fs_backup
+tar czvf ${backups_path}/${fs_backup_filename}.tar.gz ${exclude} /var/www/${web}/public_html/ 
+if [ $? -eq 0 ] 
+then
+    #DAILY
+    cp ${backups_path}/${fs_backup_filename}.tar.gz ${backups_path}/daily/${fs_backup_filename}_daily_$(date +%A).tar.gz
+        if [ $? -eq 0 ] 
+        then
+            fs_message="Daily_FS_OK"
+        else
+            fs_message="Daily_FS_FAILED"
+        fi
+
+    #WEEKLY 5 backups
+    if [ "$(date +%A)" == "Monday" ]
+    then
+        cp ${backups_path}/${fs_backup_filename}.tar.gz ${backups_path}/weekly/${fs_backup_filename}_${fulldate}_weekly.tar.gz
+        if [ $? -eq 0 ] 
+        then
+            find ${backups_path}/weekly/*_weekly.tar.gz -mtime +35 -exec rm {} \;
+            fs_message="${fs_message}, Weekly_FS_OK"
+        else
+          fs_message="${fs_message}, Weekly_FS_FAILED"
+        fi
+    fi
+ 
+    #MONTHLY 6 backups
+    if [ "$(date +%d)" == "01" ]
+    then
+        cp ${backups_path}/${fs_backup_filename}.tar.gz ${backups_path}/monthly/${fs_backup_filename}_monthly_$(date +%M).tar.gz
+        if [ $? -eq 0 ] 
+        then
+            find ${backups_path}/monthly/*_monthly_*.tar.gz -mtime +178 -exec rm {} \;
+          fs_message="${fs_message}, Monthly_FS_OK"
+        else
+            fs_message="${fs_message}, Monthly_FS_FAILED"
+        fi
+    fi
+
+    #YEARLY 5 backups
+    if [ "$(date +%j)" == "001" ]
+    then
+        cp ${backups_path}/${fs_backup_filename}.tar.gz ${backups_path}/yearly/${fs_backup_filename}_yearly_$(date +%Y).tar.gz
+        if [ $? -eq 0 ] 
+        then
+            find ${backups_path}/yearly/*_yearly_*.tar.gz -mtime +1825 -exec rm {} \;
+          fs_message="${fs_message}, Yearly_FS_OK"
+        else
+            fs_message="${fs_message}, Yearly_FS_FAILED"
+        fi
+    fi
+
+
+
+    rm ${backups_path}/${fs_backup_filename}.tar.gz
+
+else 
+    if [ -e ${backups_path}/${fs_backup_filename}.tar.gz ] 
+    then
+        rm ${backups_path}/${fs_backup_filename}.tar.gz
+    fi
+    files_message="FS_TAR_FAILED"
+fi
+
+
+source /home/backup_user/.telegram_keys   
+URL=https://api.telegram.org/bot$TOKEN/sendMessage
+curl -s -X POST $URL -d chat_id=$CHANNEL -d text="${web} backup: ${db_message} and ${fs_message}" >/dev/null 2>&1
