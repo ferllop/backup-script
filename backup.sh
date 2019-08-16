@@ -87,7 +87,7 @@ fi
 
 
 fs_backup_filename=${web}_fs_backup
-tar czvf ${backups_path}/${fs_backup_filename}.tar.gz ${exclude} /var/www/${web}/public_html/ 
+tar czvf ${backups_path}/${fs_backup_filename}.tar.gz ${exclude} /var/www/${web}/ 
 if [ $? -eq 0 ] 
 then
     #DAILY
