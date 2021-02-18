@@ -1,10 +1,25 @@
-Para desencriptar:
-gpg --batch --passphrase "long%great_password" example-fs-file.tar.xz.gpg
-Esto no borra el archivo encriptado si no que se crea uno nuevo desencriptado.
+#To desencrypt
+First create and enter inside de directory where you want to put your project files.
+Put there your two backup files.
 
-Para descomprimir archivo fs:
-tar -xJvf example-fs-file.tar.xz
-Esto descomprime en la ruta actual. Lo primero que se crea es un directorio madre de la web y dentro de él todo lo demás.
+To create the desencrypted the files:
+```
+gpg --batch --pinentry-mode loopback --decrypt-files *.gpg
+```
 
-Para descomprimir archivo db:
-xz -d example-db-file.sql.xz
+
+To decompress the filesystem of your project execute:
+```
+tar -xJvf *.tar.xz
+```
+
+To decompress the database dump file:
+```
+xz -d *.sql.xz
+```
+
+To dump the sql file into a mysql database previously created:
+```
+mysq -u user_with_proper_privileges --password database_name < sql_dump_file
+```
+
