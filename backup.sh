@@ -18,78 +18,79 @@ fulldate=$(date +%Y%m%dT%H.%M.%S)
 backups_path=/home/backup_user/backups
 db_backup_filename=${web}_db_backup
 
-mysqldump --user=backup_user --lock-tables --databases ${database} -h localhost > ${backups_path}/${db_backup_filename}.sql
-if [ $? -eq 0 ] 
-then
-    some_cp_error="false"
-    xz --compress ${backups_path}/${db_backup_filename}.sql
-    gpg --symmetric --pinentry-mode loopback --passphrase-file ~/.gpg_key ${backups_path}/${db_backup_filename}.sql.xz
+some_cp_error="false"
+if [ "$database" != "none" ]; then
+	mysqldump --user=backup_user --lock-tables --databases ${database} -h localhost > ${backups_path}/${db_backup_filename}.sql
+	if [ $? -eq 0 ] 
+	then
+	    xz --compress ${backups_path}/${db_backup_filename}.sql
+	    gpg --symmetric --pinentry-mode loopback --passphrase-file ~/.gpg_key ${backups_path}/${db_backup_filename}.sql.xz
 
-    #DAILY
-    cp ${backups_path}/${db_backup_filename}.sql.xz.gpg ${backups_path}/daily/${db_backup_filename}_daily_$(date +%A).sql.xz.gpg
-        if [ $? -eq 0 ] 
-        then
-            db_message="Daily_DB_OK"
-        else
-            db_message="Daily_DB_FAILED"
-            some_cp_error="true"
-        fi
+	    #DAILY
+	    cp ${backups_path}/${db_backup_filename}.sql.xz.gpg ${backups_path}/daily/${db_backup_filename}_daily_$(date +%A).sql.xz.gpg
+		if [ $? -eq 0 ] 
+		then
+		    db_message="Daily_DB_OK"
+		else
+		    db_message="Daily_DB_FAILED"
+		    some_cp_error="true"
+		fi
 
-    #WEEKLY 5 backups
-    if [ "$(date +%A)" == "Monday" ]
-    then
-        cp ${backups_path}/${db_backup_filename}.sql.xz.gpg ${backups_path}/weekly/${db_backup_filename}_${fulldate}_weekly.sql.xz.gpg
-        if [ $? -eq 0 ] 
-        then
-            find ${backups_path}/weekly/${db_backup_filename}_*_weekly.sql.xz.gpg -mtime +35 -exec rm {} \;
-            db_message="${db_message}, Weekly_DB_OK"
-        else
-            db_message="${db_message}, Weekly_DB_FAILED"
-            some_cp_error="true"
-        fi
-    fi
+	    #WEEKLY 5 backups
+	    if [ "$(date +%A)" == "Monday" ]
+	    then
+		cp ${backups_path}/${db_backup_filename}.sql.xz.gpg ${backups_path}/weekly/${db_backup_filename}_${fulldate}_weekly.sql.xz.gpg
+		if [ $? -eq 0 ] 
+		then
+		    find ${backups_path}/weekly/${db_backup_filename}_*_weekly.sql.xz.gpg -mtime +35 -exec rm {} \;
+		    db_message="${db_message}, Weekly_DB_OK"
+		else
+		    db_message="${db_message}, Weekly_DB_FAILED"
+		    some_cp_error="true"
+		fi
+	    fi
 
-    #MONTHLY 6 backups
-    if [ "$(date +%d)" == "01" ]
-    then
-        cp ${backups_path}/${db_backup_filename}.sql.xz.gpg ${backups_path}/monthly/${db_backup_filename}_monthly_$(date +%M).sql.xz.gpg
-        if [ $? -eq 0 ] 
-        then
-            find ${backups_path}/monthly/${db_backup_filename}_monthly_*.sql.xz.gpg -mtime +178 -exec rm {} \;
-          db_message="${db_message}, Monthly_DB_OK"
-        else
-            db_message="${db_message}, Monthly_DB_FAILED"
-            some_cp_error="true"
-        fi
-    fi
+	    #MONTHLY 6 backups
+	    if [ "$(date +%d)" == "01" ]
+	    then
+		cp ${backups_path}/${db_backup_filename}.sql.xz.gpg ${backups_path}/monthly/${db_backup_filename}_monthly_$(date +%M).sql.xz.gpg
+		if [ $? -eq 0 ] 
+		then
+		    find ${backups_path}/monthly/${db_backup_filename}_monthly_*.sql.xz.gpg -mtime +178 -exec rm {} \;
+		  db_message="${db_message}, Monthly_DB_OK"
+		else
+		    db_message="${db_message}, Monthly_DB_FAILED"
+		    some_cp_error="true"
+		fi
+	    fi
 
-    #YEARLY 5 backups
-    if [ "$(date +%j)" == "001" ]
-    then
-        cp ${backups_path}/${db_backup_filename}.sql.xz.gpg ${backups_path}/yearly/${db_backup_filename}_yearly_$(date +%Y).sql.xz.gpg
-        if [ $? -eq 0 ] 
-        then
-            find ${backups_path}/yearly/${db_backup_filename}_yearly_*.sql.xz.gpg -mtime +1825 -exec rm {} \;
-          db_message="${db_message}, Yearly_DB_OK"
-        else
-            db_message="${db_message}, Yearly_DB_FAILED"
-            some_cp_error="true"
-        fi
-    fi
+	    #YEARLY 5 backups
+	    if [ "$(date +%j)" == "001" ]
+	    then
+		cp ${backups_path}/${db_backup_filename}.sql.xz.gpg ${backups_path}/yearly/${db_backup_filename}_yearly_$(date +%Y).sql.xz.gpg
+		if [ $? -eq 0 ] 
+		then
+		    find ${backups_path}/yearly/${db_backup_filename}_yearly_*.sql.xz.gpg -mtime +1825 -exec rm {} \;
+		  db_message="${db_message}, Yearly_DB_OK"
+		else
+		    db_message="${db_message}, Yearly_DB_FAILED"
+		    some_cp_error="true"
+		fi
+	    fi
 
-    rm ${backups_path}/$db_backup_filename.sql.xz
-    rm ${backups_path}/$db_backup_filename.sql.xz.gpg
+	    rm ${backups_path}/$db_backup_filename.sql.xz
+	    rm ${backups_path}/$db_backup_filename.sql.xz.gpg
 
-else 
-    if [ -e ${backups_path}/$db_backup_filename.sql ]
-    then
-        rm ${backups_path}/$db_backup_filename.sql
-    fi
+	else 
+	    if [ -e ${backups_path}/$db_backup_filename.sql ]
+	    then
+		rm ${backups_path}/$db_backup_filename.sql
+	    fi
 
-    db_message="DB_dump_FAILED"
-    some_cp_error="true"
-fi  
-
+	    db_message="DB_dump_FAILED"
+	    some_cp_error="true"
+	fi  
+fi
 
 fs_backup_filename=${web}_fs_backup
 
@@ -164,7 +165,7 @@ else
 fi
 
 #REMOTE SYNC
-if [ "$some_cp_error" = "false" ]
+if [ "$some_cp_error" == "false" ]
 then
     rclone sync ${backups_path} ${remote_backups_path} -P --mega-hard-delete
     if [ $? -eq 0 ]
