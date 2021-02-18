@@ -1,24 +1,21 @@
 #!/bin/bash
+
 backup_name=$1
 source_directory=$2
 database=$3
 remote_backups_path=$4
 dirnames_to_exclude=$5
 
-#prepare exclude string for files backup
-arr=($(echo "$dirnames_to_exclude" | tr ',' '\n'))
-exclude=""
-for i in ${arr[@]}
-do
-    exclude="${exclude} --exclude=${i} "
-done
-exclude="$(echo -e "${exclude}" | sed -e 's/[[:space:]]*$//')"
-
 fulldate=$(date +%Y%m%dT%H.%M.%S)   
-
 backups_path=/home/backup_user/backups
 db_backup_filename=${backup_name}_db_backup
 
+
+###########################
+#                         #
+#    DATABASE BACKUP      #
+#                         #
+###########################
 some_cp_error="false"
 if [ "$database" != "none" ]; then
 	mysqldump --user=backup_user --lock-tables -h localhost ${database} > ${backups_path}/${db_backup_filename}.sql
@@ -93,6 +90,21 @@ if [ "$database" != "none" ]; then
 	fi  
 fi
 
+
+#######################
+#                     #
+#     FILES BACKUP    #
+#                     #
+#######################
+
+#Prepare exclude string
+arr=($(echo "$dirnames_to_exclude" | tr ',' '\n'))
+exclude=""
+for i in ${arr[@]}
+do
+    exclude="${exclude} --exclude=${i} "
+done
+exclude="$(echo -e "${exclude}" | sed -e 's/[[:space:]]*$//')"
 fs_backup_filename=${backup_name}_fs_backup
 
 #the source_directory can be a symlink and I prefer to work with real path
