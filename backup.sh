@@ -1,8 +1,9 @@
 #!/bin/bash
-web=$1
-database=$2
-remote_backups_path=$3
-dirnames_to_exclude=$4
+backup_name=$1
+source_directory=$2
+database=$3
+remote_backups_path=$4
+dirnames_to_exclude=$5
 
 #prepare exclude string for files backup
 arr=($(echo "$dirnames_to_exclude" | tr ',' '\n'))
@@ -16,7 +17,7 @@ exclude="$(echo -e "${exclude}" | sed -e 's/[[:space:]]*$//')"
 fulldate=$(date +%Y%m%dT%H.%M.%S)   
 
 backups_path=/home/backup_user/backups
-db_backup_filename=${web}_db_backup
+db_backup_filename=${backup_name}_db_backup
 
 some_cp_error="false"
 if [ "$database" != "none" ]; then
@@ -92,9 +93,12 @@ if [ "$database" != "none" ]; then
 	fi  
 fi
 
-fs_backup_filename=${web}_fs_backup
+fs_backup_filename=${backup_name}_fs_backup
 
-tar -C /var/www -cvJf ${backups_path}/${fs_backup_filename}.tar.xz ${exclude} ${web}
+#the source_directory can be a symlink and I prefer to work with real path
+real_source_directory=$(readlink -f ${source_directory})
+
+tar -C ${real_source_directory} -cvJf ${backups_path}/${fs_backup_filename}.tar.xz ${exclude} .
 
 if [ $? -eq 0 ]
 then
@@ -178,4 +182,4 @@ fi
 
 source /home/backup_user/.telegram_keys   
 URL=https://api.telegram.org/bot$TOKEN/sendMessage
-curl -s -X POST $URL -d chat_id=$CHANNEL -d text="${web} backup: ${db_message} and ${fs_message}. ${remote_message}" > /dev/null 2>&1
+curl -s -X POST $URL -d chat_id=$CHANNEL -d text="${backup_name} backup: ${db_message} and ${fs_message}. ${remote_message}" > /dev/null 2>&1
