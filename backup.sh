@@ -21,7 +21,7 @@ db_backup_filename=${backup_name}_db_backup
 
 some_cp_error="false"
 if [ "$database" != "none" ]; then
-	mysqldump --user=backup_user --lock-tables --databases ${database} -h localhost > ${backups_path}/${db_backup_filename}.sql
+	mysqldump --user=backup_user --lock-tables -h localhost ${database} > ${backups_path}/${db_backup_filename}.sql
 	if [ $? -eq 0 ] 
 	then
 	    xz --compress ${backups_path}/${db_backup_filename}.sql
