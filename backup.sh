@@ -56,7 +56,7 @@ if [ "$database" != "none" ]; then
 	    if [ "$(date +%d)" == "01" ]; then
 		    cp ${backups_path}/${db_backup_filename}.sql.xz.gpg ${backups_path}/monthly/${db_backup_filename}_monthly_$(date +%M).sql.xz.gpg
 		    if [ $? -eq 0 ]; then
-			    find ${backups_path}/monthly/${db_backup_filename}_monthly_*.sql.xz.gpg -mtime +178 -exec rm {} \;
+			    find ${backups_path}/monthly/${db_backup_filename}_monthly_*.sql.xz.gpg -mtime +183 -exec rm {} \;
 			    db_message="${db_message}, Monthly_DB_OK"
 		    else
 			    db_message="${db_message}, Monthly_DB_FAILED"
@@ -148,7 +148,7 @@ then
 		    cp ${backups_path}/${fs_backup_filename}.tar.xz.gpg ${backups_path}/monthly/${fs_backup_filename}_monthly_$(date +%M).tar.xz.gpg
 		    if [ $? -eq 0 ] 
 		    then
-			    find ${backups_path}/monthly/${fs_backup_filename}_monthly_*.tar.xz.gpg -mtime +178 -exec rm {} \;
+			    find ${backups_path}/monthly/${fs_backup_filename}_monthly_*.tar.xz.gpg -mtime +183 -exec rm {} \;
 			    fs_message="${fs_message}, Monthly_FS_OK"
 		    else
 			    fs_message="${fs_message}, Monthly_FS_FAILED"
@@ -186,6 +186,7 @@ then
 if [ "$some_cp_error" == "false" ] && [ "$remote_backups_path" != "none" ]
 then
     rclone sync ${backups_path} ${remote_backups_path} -P --mega-hard-delete
+    rclone dedupe --dedupe-mode newest mega:/backups
     if [ $? -eq 0 ]
     then
 	    remote_message="Remote_SYNC_OK"
