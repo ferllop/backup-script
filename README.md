@@ -40,9 +40,24 @@ This is the complete command:
 bash /home/backer/backup-script/backup.sh savetheworld.backup /var/www/savetheworld/live savetheworld_database mega:/backups wp-includes,wp-admin,cache,node_modules
 ```
 
+## About database
+You can skip the database backup using "none" (without the quotes) as the database name.
+
+# About files
+You can skip the backup of the files using "none" (without the quooootes) as the root directory.
+
+## About docker
+If your database is into a docker container, the database name has to be "docker#container_name:database_name".
+
+It's up to you to prepare the container to be accessed securely. 
+
+If the root directory containing the files that you want to backup are into a docker container, you have to mount it into the docker host.
+
+## About remote
+If you can skip the remote connection using "none" (without the quotes) as the remote name.
+
 
 # To restore
-
 First create and enter inside the directory where you want to put your project files and put there your two backup files.
 
 To obtain two new desencrypted files:
@@ -62,6 +77,6 @@ xz -d *.sql.xz
 
 To dump the sql file into a mysql database **previously created**:
 ```
-mysq -u db_user_with_proper_privileges --password database_name < sql_dump_file
+mysql -u db_user_with_proper_privileges --password database_name < sql_dump_file
 ```
 
