@@ -23,7 +23,7 @@ if [ "$database" != "none" ]; then
 		docker_data=$(echo $database | cut -d "#" -f 2)
 		container=$(echo $docker_data | cut -d ":" -f 1)
 		database=$(echo $docker_data | cut -d ":" -f 2)
-		sudo docker exec -it $container mysqldump --user=backup_user --lock-tables -h localhost $database > $dump_destination
+		sudo docker exec $container mysqldump --user=backup_user --lock-tables -h localhost $database > $dump_destination
 	else
 		mysqldump --user=backup_user --lock-tables -h localhost $database > $dump_destination
 	fi
