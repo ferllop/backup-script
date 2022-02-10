@@ -190,11 +190,21 @@ then
     if [ $? -eq 0 ]
     then
 	    remote_message="Remote_SYNC_OK"
+	    some_remote_sync_error="false"
     else
 	    remote_message="Remote_SYNC_FAILED"
+	    some_remote_sync_error="true"
     fi
 fi
 
 source /home/backup_user/.telegram_keys   
 URL=https://api.telegram.org/bot$TOKEN/sendMessage
-curl -s -X POST $URL -d chat_id=$CHANNEL -d text="${backup_name} backup: ${db_message} and ${fs_message}. ${remote_message}" > /dev/null 2>&1
+full_final_message="${backup_name} backup: ${db_message} and ${fs_message}. ${remote_message}"
+curl -s -X POST $URL -d chat_id=$CHANNEL -d text="$full_final_message" > /dev/null 2>&1
+
+if [ "$some_cp_error" == "true" ] || [ "$some_remote_sync_error" == "true" ]
+then 
+    echo "$full_final_message" >&2
+else
+    echo "$full_final_message"
+fi
