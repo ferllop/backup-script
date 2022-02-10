@@ -112,7 +112,7 @@ then
 	#the source_directory can be a symlink and I prefer to work with real path
 	real_source_directory=$(readlink -f ${source_directory})
 
-	tar -C ${real_source_directory} -cvJf ${backups_path}/${fs_backup_filename}.tar.xz ${exclude} .
+	tar -C ${real_source_directory} -cJf ${backups_path}/${fs_backup_filename}.tar.xz ${exclude} .
 
 	if [ $? -eq 0 ]
 	then
