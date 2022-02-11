@@ -185,7 +185,7 @@ then
 #REMOTE SYNC
 if [ "$some_cp_error" == "false" ] && [ "$remote_backups_path" != "none" ]
 then
-    rclone sync ${backups_path} ${remote_backups_path} -P --mega-hard-delete
+    rclone sync ${backups_path} ${remote_backups_path} -P --mega-hard-delete 1> /dev/null
     if [ $? -eq 0 ]
     then
             rclone dedupe --dedupe-mode newest mega:/backups
