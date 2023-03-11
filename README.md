@@ -11,6 +11,11 @@ You will need to have installed in your system:
 I have a cron job for each website running every day at night and I receive a telegram message with the status of each website backup.
 
 The configuration data is centralized in backup.conf file that could be into the root of the home directory of the user who executes de script or in /etc folder.
+Secure this file, for example allowing only the owner to read it:
+```
+chmod 400 /etc/backup.conf
+```
+
 There is a sample config file that you can copy and modify with your data.
 
 At this time you have to config rclone four yourself. Mega is hardcoded to be used. If you use another cloud provider, modify the script. 
@@ -34,7 +39,7 @@ that was a lot of assumptions!!!
 
 This is the complete command:
 ```
-bash /home/backer/backup-script/backup.sh \
+bash /home/backup_user/backup-script/backup.sh \
    savetheworld.backup \
    /var/www/savetheworld/live \
    savetheworld_database \
