@@ -10,11 +10,8 @@ You will need to have installed in your system:
 
 I have a cron job for each website running every day at night and I receive a telegram message with the status of each website backup.
 
-There are hardcoded data that in the future will in an external config file.
-
-There are user config files for the credentials of mysql and telegram, that will be moved to the general config file.
-
-I'm concerned about the security issues. So I have to know the best way to deal with this.
+The configuration data is centralized in backup.conf file that could be into the root of the home directory of the user who executes de script or in /etc folder.
+There is a sample config file that you can copy and modify with your data.
 
 At this time you have to config rclone four yourself. Mega is hardcoded to be used. If you use another cloud provider, modify the script. 
 
@@ -37,13 +34,18 @@ that was a lot of assumptions!!!
 
 This is the complete command:
 ```
-bash /home/backer/backup-script/backup.sh savetheworld.backup /var/www/savetheworld/live savetheworld_database mega:/backups wp-includes,wp-admin,cache,node_modules
+bash /home/backer/backup-script/backup.sh \
+   savetheworld.backup \
+   /var/www/savetheworld/live \
+   savetheworld_database \
+   mega:/backups \
+   wp-includes,wp-admin,cache,node_modules
 ```
 
 ## About database
 You can skip the database backup using "none" (without the quotes) as the database name.
 
-# About files
+## About files
 You can skip the backup of the files using "none" (without the quooootes) as the root directory.
 
 ## About docker
@@ -54,7 +56,7 @@ It's up to you to prepare the container to be accessed securely.
 If the root directory containing the files that you want to backup are into a docker container, you have to mount it into the docker host.
 
 ## About remote
-If you can skip the remote connection using "none" (without the quotes) as the remote name.
+You can skip the remote connection using "none" (without the quotes) as the remote name.
 
 
 # To restore

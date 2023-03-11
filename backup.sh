@@ -6,8 +6,19 @@ database=$3
 remote_backups_path=$4
 dirnames_to_exclude=$5
 
+config_filename="backup.conf"
+if [[ -e "~/$config_filename" ]]; then
+	source "~/$config_filename";
+elif [[ -e "/etc/$config_filename" ]]; then
+	source "/etc/$config_filename";
+else
+	echo >&2 "Please put $config_filename file into the home root of whom executes this script or in the /etc folder.";
+	exit 1;
+fi
+
+
 fulldate=$(date +%Y%m%dT%H.%M.%S)   
-backups_path=/home/backup_user/backups
+backups_path=$BACKUPS_LOCAL_PATH
 db_backup_filename=${backup_name}_db_backup
 dump_destination=$backups_path/$db_backup_filename.sql
 
@@ -23,13 +34,13 @@ if [ "$database" != "none" ]; then
 		docker_data=$(echo $database | cut -d "#" -f 2)
 		container=$(echo $docker_data | cut -d ":" -f 1)
 		database=$(echo $docker_data | cut -d ":" -f 2)
-		sudo docker exec $container mysqldump --user=backup_user --lock-tables -h localhost $database > $dump_destination
+		sudo docker exec $container mysqldump --user=$DATABASE_USER -p$DATABASE_PASSWORD --lock-tables -h localhost $database > $dump_destination
 	else
 		mysqldump --user=backup_user --lock-tables -h localhost $database > $dump_destination
 	fi
 	if [ $? -eq 0 ]; then
 		xz --compress ${backups_path}/${db_backup_filename}.sql
-		gpg --symmetric --pinentry-mode loopback --passphrase-file ~/.gpg_key ${backups_path}/${db_backup_filename}.sql.xz
+		gpg --symmetric --pinentry-mode loopback --passphrase $GPG_KEY ${backups_path}/${db_backup_filename}.sql.xz
 
 	    #DAILY
 	    cp ${backups_path}/${db_backup_filename}.sql.xz.gpg ${backups_path}/daily/${db_backup_filename}_daily_$(date +%A).sql.xz.gpg
@@ -197,10 +208,9 @@ then
     fi
 fi
 
-source /home/backup_user/.telegram_keys   
-URL=https://api.telegram.org/bot$TOKEN/sendMessage
+URL=https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage
 full_final_message="${backup_name} backup: ${db_message} and ${fs_message}. ${remote_message}"
-curl -s -X POST $URL -d chat_id=$CHANNEL -d text="$full_final_message" > /dev/null 2>&1
+curl -s -X POST $URL -d chat_id=$TELEGRAM_CHANNEL -d text="$full_final_message" > /dev/null 2>&1
 
 if [ "$some_cp_error" == "true" ] || [ "$some_remote_sync_error" == "true" ]
 then 
