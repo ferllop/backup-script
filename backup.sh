@@ -16,12 +16,22 @@ else
 	exit 1;
 fi
 
-
 fulldate=$(date +%Y%m%dT%H.%M.%S)   
-backups_path=$BACKUPS_LOCAL_PATH
 db_backup_filename=${backup_name}_db_backup
-dump_destination=$backups_path/$db_backup_filename.sql
+dump_destination=$BACKUPS_LOCAL_PATH/$db_backup_filename.sql
 
+if [[ ! -d "$BACKUPS_LOCAL_PATH/daily" ]]; then
+	mkdir -p $BACKUPS_LOCAL_PATH/daily;
+fi
+if [[ ! -d "$BACKUPS_LOCAL_PATH/weekly" ]]; then
+	mkdir -p $BACKUPS_LOCAL_PATH/weekly;
+fi
+if [[ ! -d "$BACKUPS_LOCAL_PATH/monthly" ]]; then
+	mkdir -p $BACKUPS_LOCAL_PATH/monthly;
+fi
+if [[ ! -d "$BACKUPS_LOCAL_PATH/yearly" ]]; then
+	mkdir -p $BACKUPS_LOCAL_PATH/yearly;
+fi
 
 ###########################
 #                         #
@@ -39,11 +49,11 @@ if [ "$database" != "none" ]; then
 		mysqldump --user=backup_user --lock-tables -h localhost $database > $dump_destination
 	fi
 	if [ $? -eq 0 ]; then
-		xz --compress ${backups_path}/${db_backup_filename}.sql
-		gpg --symmetric --pinentry-mode loopback --passphrase $GPG_KEY ${backups_path}/${db_backup_filename}.sql.xz
+		xz --compress ${BACKUPS_LOCAL_PATH}/${db_backup_filename}.sql
+		gpg --symmetric --pinentry-mode loopback --passphrase $GPG_KEY ${BACKUPS_LOCAL_PATH}/${db_backup_filename}.sql.xz
 
 	    #DAILY
-	    cp ${backups_path}/${db_backup_filename}.sql.xz.gpg ${backups_path}/daily/${db_backup_filename}_daily_$(date +%A).sql.xz.gpg
+	    cp ${BACKUPS_LOCAL_PATH}/${db_backup_filename}.sql.xz.gpg ${BACKUPS_LOCAL_PATH}/daily/${db_backup_filename}_daily_$(date +%A).sql.xz.gpg
 	    if [ $? -eq 0 ]; then
 		    db_message="Daily_DB_OK"
 	    else
@@ -53,33 +63,33 @@ if [ "$database" != "none" ]; then
 
 	    #WEEKLY 5 backups
 	    if [ "$(date +%A)" == "Monday" ]; then
-		    cp ${backups_path}/${db_backup_filename}.sql.xz.gpg ${backups_path}/weekly/${db_backup_filename}_${fulldate}_weekly.sql.xz.gpg
+		    cp ${BACKUPS_LOCAL_PATH}/${db_backup_filename}.sql.xz.gpg ${BACKUPS_LOCAL_PATH}/weekly/${db_backup_filename}_${fulldate}_weekly.sql.xz.gpg
 		    if [ $? -eq 0 ]; then
-			    find ${backups_path}/weekly/${db_backup_filename}_*_weekly.sql.xz.gpg -mtime +35 -exec rm {} \;
+			    find ${BACKUPS_LOCAL_PATH}/weekly/${db_backup_filename}_*_weekly.sql.xz.gpg -mtime +35 -exec rm {} \;
 			    db_message="${db_message}, Weekly_DB_OK"
 		    else
 			    db_message="${db_message}, Weekly_DB_FAILED"
 			    some_cp_error="true"
 		    fi
-		    fi
+	    fi
 
 	    #MONTHLY 6 backups
 	    if [ "$(date +%d)" == "01" ]; then
-		    cp ${backups_path}/${db_backup_filename}.sql.xz.gpg ${backups_path}/monthly/${db_backup_filename}_monthly_$(date +%M).sql.xz.gpg
+		    cp ${BACKUPS_LOCAL_PATH}/${db_backup_filename}.sql.xz.gpg ${BACKUPS_LOCAL_PATH}/monthly/${db_backup_filename}_monthly_$(date +%M).sql.xz.gpg
 		    if [ $? -eq 0 ]; then
-			    find ${backups_path}/monthly/${db_backup_filename}_monthly_*.sql.xz.gpg -mtime +183 -exec rm {} \;
+			    find ${BACKUPS_LOCAL_PATH}/monthly/${db_backup_filename}_monthly_*.sql.xz.gpg -mtime +183 -exec rm {} \;
 			    db_message="${db_message}, Monthly_DB_OK"
 		    else
 			    db_message="${db_message}, Monthly_DB_FAILED"
 			    some_cp_error="true"
 		    fi
-		    fi
+	    fi
 
 	    #YEARLY 5 backups
 	    if [ "$(date +%j)" == "001" ]; then
-		    cp ${backups_path}/${db_backup_filename}.sql.xz.gpg ${backups_path}/yearly/${db_backup_filename}_yearly_$(date +%Y).sql.xz.gpg
+		    cp ${BACKUPS_LOCAL_PATH}/${db_backup_filename}.sql.xz.gpg ${BACKUPS_LOCAL_PATH}/yearly/${db_backup_filename}_yearly_$(date +%Y).sql.xz.gpg
 		    if [ $? -eq 0 ]; then
-			    find ${backups_path}/yearly/${db_backup_filename}_yearly_*.sql.xz.gpg -mtime +1825 -exec rm {} \;
+			    find ${BACKUPS_LOCAL_PATH}/yearly/${db_backup_filename}_yearly_*.sql.xz.gpg -mtime +1825 -exec rm {} \;
 			    db_message="${db_message}, Yearly_DB_OK"
 		    else
 			    db_message="${db_message}, Yearly_DB_FAILED"
@@ -87,12 +97,12 @@ if [ "$database" != "none" ]; then
 		    fi
 	    fi
 
-	    rm ${backups_path}/$db_backup_filename.sql.xz
-	    rm ${backups_path}/$db_backup_filename.sql.xz.gpg
+	    rm ${BACKUPS_LOCAL_PATH}/$db_backup_filename.sql.xz
+	    rm ${BACKUPS_LOCAL_PATH}/$db_backup_filename.sql.xz.gpg
 
     else 
-	    if [ -e ${backups_path}/$db_backup_filename.sql ]; then
-		    rm ${backups_path}/$db_backup_filename.sql
+	    if [ -e ${BACKUPS_LOCAL_PATH}/$db_backup_filename.sql ]; then
+		    rm ${BACKUPS_LOCAL_PATH}/$db_backup_filename.sql
 	    fi
 
 	    db_message="DB_dump_FAILED"
@@ -123,14 +133,14 @@ then
 	#the source_directory can be a symlink and I prefer to work with real path
 	real_source_directory=$(readlink -f ${source_directory})
 
-	tar -C ${real_source_directory} -cJf ${backups_path}/${fs_backup_filename}.tar.xz ${exclude} .
+	tar -C ${real_source_directory} -cJf ${BACKUPS_LOCAL_PATH}/${fs_backup_filename}.tar.xz ${exclude} .
 
 	if [ $? -eq 0 ]
 	then
-		gpg --symmetric --pinentry-mode loopback --passphrase-file ~/.gpg_key ${backups_path}/${fs_backup_filename}.tar.xz
+		gpg --symmetric --pinentry-mode loopback --passphrase-file ~/.gpg_key ${BACKUPS_LOCAL_PATH}/${fs_backup_filename}.tar.xz
 
 	    #DAILY
-	    cp ${backups_path}/${fs_backup_filename}.tar.xz.gpg ${backups_path}/daily/${fs_backup_filename}_daily_$(date +%A).tar.xz.gpg
+	    cp ${BACKUPS_LOCAL_PATH}/${fs_backup_filename}.tar.xz.gpg ${BACKUPS_LOCAL_PATH}/daily/${fs_backup_filename}_daily_$(date +%A).tar.xz.gpg
 	    if [ $? -eq 0 ] 
 	    then
 		    fs_message="Daily_FS_OK"
@@ -142,10 +152,10 @@ then
 	    #WEEKLY 5 backups
 	    if [ "$(date +%A)" == "Monday" ]
 	    then
-		    cp ${backups_path}/${fs_backup_filename}.tar.xz.gpg ${backups_path}/weekly/${fs_backup_filename}_${fulldate}_weekly.tar.xz.gpg
+		    cp ${BACKUPS_LOCAL_PATH}/${fs_backup_filename}.tar.xz.gpg ${BACKUPS_LOCAL_PATH}/weekly/${fs_backup_filename}_${fulldate}_weekly.tar.xz.gpg
 		    if [ $? -eq 0 ] 
 		    then
-			    find ${backups_path}/weekly/${fs_backup_filename}_*_weekly.tar.xz.gpg -mtime +35 -exec rm {} \;
+			    find ${BACKUPS_LOCAL_PATH}/weekly/${fs_backup_filename}_*_weekly.tar.xz.gpg -mtime +35 -exec rm {} \;
 			    fs_message="${fs_message}, Weekly_FS_OK"
 		    else
 			    fs_message="${fs_message}, Weekly_FS_FAILED"
@@ -156,10 +166,10 @@ then
 	    #MONTHLY 6 backups
 	    if [ "$(date +%d)" == "01" ]
 	    then
-		    cp ${backups_path}/${fs_backup_filename}.tar.xz.gpg ${backups_path}/monthly/${fs_backup_filename}_monthly_$(date +%M).tar.xz.gpg
+		    cp ${BACKUPS_LOCAL_PATH}/${fs_backup_filename}.tar.xz.gpg ${BACKUPS_LOCAL_PATH}/monthly/${fs_backup_filename}_monthly_$(date +%M).tar.xz.gpg
 		    if [ $? -eq 0 ] 
 		    then
-			    find ${backups_path}/monthly/${fs_backup_filename}_monthly_*.tar.xz.gpg -mtime +183 -exec rm {} \;
+			    find ${BACKUPS_LOCAL_PATH}/monthly/${fs_backup_filename}_monthly_*.tar.xz.gpg -mtime +183 -exec rm {} \;
 			    fs_message="${fs_message}, Monthly_FS_OK"
 		    else
 			    fs_message="${fs_message}, Monthly_FS_FAILED"
@@ -170,10 +180,10 @@ then
 	    #YEARLY 5 backups
 	    if [ "$(date +%j)" == "001" ]
 	    then
-		    cp ${backups_path}/${fs_backup_filename}.tar.xz.gpg ${backups_path}/yearly/${fs_backup_filename}_yearly_$(date +%Y).tar.xz.gpg
+		    cp ${BACKUPS_LOCAL_PATH}/${fs_backup_filename}.tar.xz.gpg ${BACKUPS_LOCAL_PATH}/yearly/${fs_backup_filename}_yearly_$(date +%Y).tar.xz.gpg
 		    if [ $? -eq 0 ] 
 		    then
-			    find ${backups_path}/yearly/${fs_backup_filename}_yearly_*.tar.xz.gpg -mtime +1825 -exec rm {} \;
+			    find ${BACKUPS_LOCAL_PATH}/yearly/${fs_backup_filename}_yearly_*.tar.xz.gpg -mtime +1825 -exec rm {} \;
 			    fs_message="${fs_message}, Yearly_FS_OK"
 		    else
 			    fs_message="${fs_message}, Yearly_FS_FAILED"
@@ -181,13 +191,13 @@ then
 		    fi
 	    fi
 
-	    rm ${backups_path}/${fs_backup_filename}.tar.xz
-	    rm ${backups_path}/${fs_backup_filename}.tar.xz.gpg
+	    rm ${BACKUPS_LOCAL_PATH}/${fs_backup_filename}.tar.xz
+	    rm ${BACKUPS_LOCAL_PATH}/${fs_backup_filename}.tar.xz.gpg
 
 	else 
-	    if [ -e ${backups_path}/${fs_backup_filename}.tar.xz ] 
+	    if [ -e ${BACKUPS_LOCAL_PATH}/${fs_backup_filename}.tar.xz ] 
 	    then
-		    rm ${backups_path}/${fs_backup_filename}.tar.xz
+		    rm ${BACKUPS_LOCAL_PATH}/${fs_backup_filename}.tar.xz
 	    fi
 	    files_message="FS_TAR_FAILED"
 	    some_cp_error="true"
@@ -196,7 +206,7 @@ then
 #REMOTE SYNC
 if [ "$some_cp_error" == "false" ] && [ "$remote_backups_path" != "none" ]
 then
-    rclone sync ${backups_path} ${remote_backups_path} -P --mega-hard-delete 1> /dev/null
+    rclone sync ${BACKUPS_LOCAL_PATH} ${remote_backups_path} -P --mega-hard-delete 1> /dev/null
     if [ $? -eq 0 ]
     then
             rclone dedupe --dedupe-mode newest mega:/backups
