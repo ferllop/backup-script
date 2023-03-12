@@ -137,7 +137,7 @@ then
 
 	if [ $? -eq 0 ]
 	then
-		gpg --symmetric --pinentry-mode loopback --passphrase-file ~/.gpg_key ${BACKUPS_LOCAL_PATH}/${fs_backup_filename}.tar.xz
+		gpg --symmetric --pinentry-mode loopback --passphrase $GPG_KEY ${BACKUPS_LOCAL_PATH}/${fs_backup_filename}.tar.xz
 
 	    #DAILY
 	    cp ${BACKUPS_LOCAL_PATH}/${fs_backup_filename}.tar.xz.gpg ${BACKUPS_LOCAL_PATH}/daily/${fs_backup_filename}_daily_$(date +%A).tar.xz.gpg
