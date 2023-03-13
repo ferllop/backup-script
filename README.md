@@ -10,6 +10,15 @@ You will need to have installed in your system:
 
 I have a cron job for each website running every day at night and I receive a telegram message with the status of each website backup.
 
+## About the database
+You will need to provide the database user and password to perform de database dump. As this data will live in plain text in a config file, I encourage you to create a user with the minimal permission to do the dump. As an example, you can execute the next commands inside the mysql console (don't take this as a source of truth):
+```
+CREATE USER 'backup_user'@'%' IDENTIFIED BY 'super-unguessable.password';
+REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'backup_user'@'%';
+GRANT LOCK TABLES, SELECT ON `tarro-cable-tubo-atomo`.* TO 'backup_user'@'%' IDENTIFIED BY 'super-unguessable.password';
+```
+
+## Configuration
 The configuration data is centralized in backup.conf file that could be into the root of the home directory of the user who executes de script or in /etc folder.
 Secure this file, for example allowing only the owner to read it:
 ```
@@ -26,8 +35,8 @@ After the complaints...
 # To backup
 
 Assuming that:
-- the linux user for the backups is backer.
-- the script is /home/backer/backup-script/backup.sh
+- the linux user for the backups is backup_user.
+- the script is /home/backup_user/backup-script/backup.sh
 - the backup name will be savetheworld.backup
 - the filesystem of the web is in /var/www/savetheworld/live (it can be a symlink)
 - the database name is savetheworld_database
