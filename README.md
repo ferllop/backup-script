@@ -15,7 +15,7 @@ You will need to provide the database user and password to perform de database d
 ```
 CREATE USER 'backup_user'@'%' IDENTIFIED BY 'super-unguessable.password';
 REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'backup_user'@'%';
-GRANT LOCK TABLES, SELECT ON `tarro-cable-tubo-atomo`.* TO 'backup_user'@'%' IDENTIFIED BY 'super-unguessable.password';
+GRANT LOCK TABLES, SELECT ON `savetheworld-database`.* TO 'backup_user'@'%' IDENTIFIED BY 'super-unguessable.password';
 ```
 
 ## Configuration
