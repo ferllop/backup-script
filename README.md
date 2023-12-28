@@ -8,7 +8,12 @@ You will need to have installed in your system:
 - rclone to upload to your cloud provider.
 - curl to send telegram messages automatically with the final status of the backup.
 
-I have a cron job for each website running every day at night and I receive a telegram message with the status of each website backup.
+I have a cron job for each website running every day at night and I receive a telegram message with the final status of each website backup.
+
+This an example of a cron entry that runs everyday at 5:00 am and that writes final status to a log file:
+```
+00 5    *   *   *     bash /home/backup_user/backup-script/backup.sh savetheworld.com /home/backup_user/services/savetheworld-web/html docker#savetheworld_db_container_name:unguessable.db-password mega:/backups wp-includes,wp-admin,cache,node_modules,logs 2>&1 | sed "s/^/$(date) /" >> /var/log/savetheworld.backup.log
+```
 
 ## About the database
 You will need to provide the database user and password to perform de database dump. As this data will live in plain text in a config file, I encourage you to create a user with the minimal permission to do the dump. As an example, you can execute the next commands inside the mysql console (don't take this as a source of truth):
