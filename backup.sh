@@ -50,7 +50,7 @@ if [ "$database" != "none" ]; then
 		mysqldump --user=backup_user --lock-tables -h localhost $database > $dump_destination
 	fi
 	if [ $? -eq 0 ]; then
-		xz --threads=0 -9 --compress ${BACKUPS_LOCAL_PATH}/${db_backup_filename}.sql
+		xz --quiet --threads=0 -9 --compress ${BACKUPS_LOCAL_PATH}/${db_backup_filename}.sql
 		gpg --symmetric --pinentry-mode loopback --passphrase $GPG_KEY ${BACKUPS_LOCAL_PATH}/${db_backup_filename}.sql.xz
 
 	    #DAILY
@@ -134,7 +134,7 @@ then
 	#the source_directory can be a symlink and I prefer to work with real path
 	real_source_directory=$(readlink -f ${source_directory})
 
-	tar -c -I 'xz -9 --threads=0' -C ${real_source_directory} -f ${BACKUPS_LOCAL_PATH}/${fs_backup_filename}.tar.xz ${exclude} .
+	tar -c -I 'xz --quiet -9 --threads=0' -C ${real_source_directory} -f ${BACKUPS_LOCAL_PATH}/${fs_backup_filename}.tar.xz ${exclude} .
 
 	if [ $? -eq 0 ]
 	then
