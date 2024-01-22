@@ -38,6 +38,7 @@ fi
 #    DATABASE BACKUP      #
 #                         #
 ###########################
+echo "Starting db backup"
 some_cp_error="false"
 if [ "$database" != "none" ]; then
 	if [[ $database =~ "docker#" ]]; then
@@ -116,7 +117,7 @@ fi
 #     FILES BACKUP    #
 #                     #
 #######################
-
+echo "Starting files backup"
 if [ "$source_directory" != "none" ]
 then
 
@@ -219,7 +220,31 @@ then
 fi
 
 URL=https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage
-full_final_message="${backup_name} backup: ${db_message} and ${fs_message}. ${remote_message}"
+
+#full_final_message="${backup_name} backup:" 
+#if [ "$database" != "none" ]; then
+#    full_final_message="${full_final_message} ${db_message}"
+#fi
+#if [ "$database" != "none" ] && [ "$source_directory" != "none" ]; then
+#    full_final_message="${full_final_message} and"
+#fi
+#full_final_message="${full_final_message} ${fs_message}. ${remote_message}"
+
+render_final_message () {
+	local message="${backup_name} backup:" 
+	if [ "$database" != "none" ]; then
+	    message="${message} ${db_message}"
+	fi
+	if [ "$database" != "none" ] && [ "$source_directory" != "none" ]; then
+	    message="${message} and"
+	fi
+	if [ "$source_directory" != "none" ]; then
+	    message="${message} ${fs_message}"
+	fi
+	echo "${message}. ${remote_message}"
+}
+
+full_final_message=$(render_final_message)
 curl -s -X POST $URL -d chat_id=$TELEGRAM_CHANNEL -d text="$full_final_message" > /dev/null 2>&1
 
 if [ "$some_cp_error" == "true" ] || [ "$some_remote_sync_error" == "true" ]
