@@ -46,6 +46,9 @@ if [ "$database" != "none" ]; then
 		container=$(echo $docker_data | cut -d ":" -f 1)
 		database=$(echo $docker_data | cut -d ":" -f 2)
 		sudo docker exec $container mysqldump --user=$DATABASE_USER -p$DATABASE_PASSWORD --lock-tables -h localhost $database > $dump_destination
+  		if [ ! $? -eq 0 ]; then
+                        sudo docker exec $container mariadb-dump --user=$DATABASE_USER -p$DATABASE_PASSWORD --lock-tables -h localhost $database > $dump_destination
+                fi
 	else
 		mysqldump --user=backup_user --lock-tables -h localhost $database > $dump_destination
 	fi
